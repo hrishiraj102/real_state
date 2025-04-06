@@ -113,3 +113,107 @@ def get_all_sales():
             'sale_date': str(s.sale_date),
         })
     return jsonify(result)
+
+
+#Post 
+
+@bp.route('/properties', methods=['POST'])
+def create_property():
+    data = request.json
+    new_property = Properties(
+        owner_id=data['owner_id'],
+        agent_id=data['agent_id'],
+        property_name=data['property_name'],
+        state=data['state'],
+        city=data['city'],
+        address_line=data['address_line'],
+        size_sqf=data['size_sqf'],
+        no_of_bedrooms=data['no_of_bedrooms'],
+        year_built=data['year_built'],
+        rent_price=data['rent_price'],
+        sale_price=data['sale_price'],
+        status=data['status'],
+        date_of_listing=data['date_of_listing']
+    )
+    db.session.add(new_property)
+    db.session.commit()
+    return jsonify({'message': 'Property added successfully'}), 201
+
+
+@bp.route('/agents', methods=['POST'])
+def create_agent():
+    data = request.json
+    new_agent = Agents(
+        email=data['email'],
+        phone_number=data['phone_number'],
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        state=data['state'],
+        city=data['city'],
+        address_line=data['address_line'],
+        password_hash=data['password_hash']
+    )
+    db.session.add(new_agent)
+    db.session.commit()
+    return jsonify({'message': 'Agent added successfully'}), 201
+
+
+@bp.route('/owners', methods=['POST'])
+def create_owner():
+    data = request.json
+    new_owner = Owner(
+        name=data['name'],
+        email=data['email'],
+        phone=data['phone'],
+        adhar_number=data['adhar_number'],
+        state=data['state'],
+        city=data['city'],
+        address_line=data['address_line']
+    )
+    db.session.add(new_owner)
+    db.session.commit()
+    return jsonify({'message': 'Owner added successfully'}), 201
+
+
+@bp.route('/buyers', methods=['POST'])
+def create_buyer():
+    data = request.json
+    new_buyer = Buyer(
+        name=data['name'],
+        phone=data['phone'],
+        adhar_number=data['adhar_number']
+    )
+    db.session.add(new_buyer)
+    db.session.commit()
+    return jsonify({'message': 'Buyer added successfully'}), 201
+
+
+@bp.route('/rents', methods=['POST'])
+def create_rent():
+    data = request.json
+    new_rent = Rent(
+        property_id=data['property_id'],
+        buyer_id=data['buyer_id'],
+        agent_id=data['agent_id'],
+        rent_price=data['rent_price'],
+        rent_date=data['rent_date'],
+        duration_of_rent=data['duration_of_rent']
+    )
+    db.session.add(new_rent)
+    db.session.commit()
+    return jsonify({'message': 'Rent record added successfully'}), 201
+
+
+@bp.route('/sales', methods=['POST'])
+def create_sale():
+    data = request.json
+    new_sale = Sale(
+        property_id=data['property_id'],
+        buyer_id=data['buyer_id'],
+        agent_id=data['agent_id'],
+        sale_price=data['sale_price'],
+        sale_date=data['sale_date']
+    )
+    db.session.add(new_sale)
+    db.session.commit()
+    return jsonify({'message': 'Sale record added successfully'}), 201
