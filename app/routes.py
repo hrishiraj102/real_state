@@ -217,3 +217,124 @@ def create_sale():
     db.session.add(new_sale)
     db.session.commit()
     return jsonify({'message': 'Sale record added successfully'}), 201
+
+
+#put
+
+@bp.route('/agents/<int:agent_id>', methods=['PUT'])
+def update_agent(agent_id):
+    agent = Agents.query.get(agent_id)
+    if not agent:
+        return jsonify({'error': 'Agent not found'}), 404
+
+    data = request.get_json()
+    agent.first_name = data.get('first_name', agent.first_name)
+    agent.last_name = data.get('last_name', agent.last_name)
+    agent.email = data.get('email', agent.email)
+    agent.phone_number = data.get('phone_number', agent.phone_number)
+    agent.state = data.get('state', agent.state)
+    agent.city = data.get('city', agent.city)
+    agent.address_line = data.get('address_line', agent.address_line)
+    agent.password_hash = data.get('password_hash', agent.password_hash)
+
+    db.session.commit()
+    return jsonify({'message': 'Agent updated successfully'})
+
+
+@bp.route('/properties/<int:property_id>', methods=['PUT'])
+def update_property(property_id):
+    prop = Properties.query.get(property_id)
+    if not prop:
+        return jsonify({'error': 'Property not found'}), 404
+
+    data = request.get_json()
+    prop.owner_id = data.get('owner_id', prop.owner_id)
+    prop.agent_id = data.get('agent_id', prop.agent_id)
+    prop.property_name = data.get('property_name', prop.property_name)
+    prop.state = data.get('state', prop.state)
+    prop.city = data.get('city', prop.city)
+    prop.address_line = data.get('address_line', prop.address_line)
+    prop.size_sqf = data.get('size_sqf', prop.size_sqf)
+    prop.no_of_bedrooms = data.get('no_of_bedrooms', prop.no_of_bedrooms)
+    prop.year_built = data.get('year_built', prop.year_built)
+    prop.rent_price = data.get('rent_price', prop.rent_price)
+    prop.sale_price = data.get('sale_price', prop.sale_price)
+    prop.status = data.get('status', prop.status)
+    prop.date_of_listing = data.get('date_of_listing', prop.date_of_listing)
+
+    db.session.commit()
+    return jsonify({'message': 'Property updated successfully'})
+
+
+@bp.route('/buyers/<int:buyer_id>', methods=['PUT'])
+def update_buyer(buyer_id):
+    buyer = Buyer.query.get(buyer_id)
+    if not buyer:
+        return jsonify({'error': 'Buyer not found'}), 404
+
+    data = request.get_json()
+    buyer.name = data.get('name', buyer.name)
+    buyer.phone = data.get('phone', buyer.phone)
+    buyer.adhar_number = data.get('adhar_number', buyer.adhar_number)
+
+    db.session.commit()
+    return jsonify({'message': 'Buyer updated successfully'})
+
+
+@bp.route('/rents/<int:rent_id>', methods=['PUT'])
+def update_rent(rent_id):
+    rent = Rent.query.get(rent_id)
+    if not rent:
+        return jsonify({'error': 'Rent record not found'}), 404
+
+    data = request.get_json()
+    rent.property_id = data.get('property_id', rent.property_id)
+    rent.buyer_id = data.get('buyer_id', rent.buyer_id)
+    rent.agent_id = data.get('agent_id', rent.agent_id)
+    rent.rent_price = data.get('rent_price', rent.rent_price)
+    rent.rent_date = data.get('rent_date', rent.rent_date)
+    rent.duration_of_rent = data.get('duration_of_rent', rent.duration_of_rent)
+
+    db.session.commit()
+    return jsonify({'message': 'Rent record updated successfully'})
+
+
+@bp.route('/sales/<int:sale_id>', methods=['PUT'])
+def update_sale(sale_id):
+    sale = Sale.query.get(sale_id)
+    if not sale:
+        return jsonify({'error': 'Sale record not found'}), 404
+
+    data = request.get_json()
+    sale.property_id = data.get('property_id', sale.property_id)
+    sale.buyer_id = data.get('buyer_id', sale.buyer_id)
+    sale.agent_id = data.get('agent_id', sale.agent_id)
+    sale.sale_price = data.get('sale_price', sale.sale_price)
+    sale.sale_date = data.get('sale_date', sale.sale_date)
+
+    db.session.commit()
+    return jsonify({'message': 'Sale record updated successfully'})
+
+
+@bp.route('/owners/<int:owner_id>', methods=['PUT'])
+def update_owner(owner_id):
+    data = request.get_json()
+    owner = Owner.query.get(owner_id)
+
+    if not owner:
+        return jsonify({'error': 'Owner not found'}), 404
+
+    # Optional: validate fields before updating
+    owner.name = data.get('name', owner.name)
+    owner.email = data.get('email', owner.email)
+    owner.phone = data.get('phone', owner.phone)
+    owner.state = data.get('state', owner.state)
+    owner.city = data.get('city', owner.city)
+    owner.address_line = data.get('address_line', owner.address_line)
+
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Owner updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
