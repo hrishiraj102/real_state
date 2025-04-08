@@ -14,7 +14,8 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
 
-    from app.routes import bp
+    from app.routes import bp, office_bp
     app.register_blueprint(bp)
+    app.register_blueprint(office_bp)
 
     return app

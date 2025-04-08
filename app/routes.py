@@ -1,8 +1,14 @@
 from flask import Blueprint, jsonify, request
 from app import db
-from app.models import Properties, Agents, Buyer, Rent, Sale, Owner
+from app.models import Properties, Agents, Buyer, Rent, Sale, Owner, OfficeStaff
 from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy import text
+#blueprint for user,main
 bp = Blueprint('main', __name__)
+
+
+#blueprint for office
+office_bp = Blueprint('office', __name__)
 
 @bp.route('/')
 def home():
@@ -344,7 +350,7 @@ def update_owner(owner_id):
         return jsonify({'error': str(e)}), 500
     
     
-    #login/signup
+#login/signup
     
    
 
@@ -390,3 +396,114 @@ def register_agent():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+
+#Office staff
+
+@bp.route('/register_office', methods=['POST'])
+def register_office():
+    data = request.json
+    if OfficeStaff.query.filter_by(email=data['email']).first():
+        return jsonify({'message': 'Staff already exists'}), 400
+    
+    staff = OfficeStaff(
+        email=data['email'],
+        phone=data['phone'],
+        first_name=data.get('first_name'),
+        last_name=data.get('last_name'),
+        address=data.get('address'),
+        city=data.get('city'),
+        is_admin=data.get('is_admin', False)
+    )
+    staff.set_password(data['password'])
+    db.session.add(staff)
+    db.session.commit()
+    return jsonify({'message': 'Office staff registered successfully'}), 201
+
+
+@bp.route('/login_office', methods=['POST'])
+def login_office():
+    data = request.json
+    staff = OfficeStaff.query.filter_by(email=data['email']).first()
+    if staff and staff.check_password(data['password']):
+        return jsonify({'message': 'Login successful', 'is_admin': staff.is_admin}), 200
+    return jsonify({'message': 'Invalid credentials'}), 401
+
+
+@bp.route('/office/<int:staff_id>', methods=['GET'])
+def get_office_staff(staff_id):
+    staff = OfficeStaff.query.get(staff_id)
+    if not staff:
+        return jsonify({'message': 'Staff not found'}), 404
+    return jsonify({
+        'id': staff.id,
+        'name': f'{staff.first_name} {staff.last_name}',
+        'email': staff.email,
+        'phone': staff.phone,
+        'city': staff.city,
+        'is_admin': staff.is_admin
+    }), 200
+
+
+
+
+
+
+# Query to be run on office 
+
+@bp.route('/agent_reports', methods=['GET'])
+def agent_reports():
+    result = []
+
+    # Fetch all agents from the agents table
+    agents = db.session.execute(text("SELECT * FROM agents")).fetchall()
+
+    for agent in agents:
+        agent_id = agent.agent_id
+        full_name = f"{agent.first_name} {agent.last_name}"
+
+        # 1. Sales Data
+        sales_query = text("""
+            SELECT s.sale_date, s.sale_price, 
+                   p.property_id, p.city, p.address_line
+            FROM sale s
+            JOIN properties p ON s.property_id = p.property_id
+            WHERE p.agent_id = :agent_id
+        """)
+        sales = db.session.execute(sales_query, {'agent_id': agent_id}).fetchall()
+
+        sales_data = [{
+            "sale_date": sale.sale_date,
+            "sale_price": sale.sale_price,
+            "property_id": sale.property_id,
+            "city": sale.city,
+            "area": sale.address_line   # ✅ use this
+        } for sale in sales]
+
+        # 2. Rentals Data
+        rental_query = text("""
+            SELECT r.rent_date, r.rent_price,
+                   p.property_id, p.city, p.address_line
+            FROM rent r
+            JOIN properties p ON r.property_id = p.property_id
+            WHERE p.agent_id = :agent_id
+        """)
+        rentals = db.session.execute(rental_query, {'agent_id': agent_id}).fetchall()
+
+        rental_data = [{
+            "rent_date": rent.rent_date,
+            "rent_amount": rent.rent_price,
+            "property_id": rent.property_id,
+            "city": rent.city,
+            "area": rent.address_line   # ✅ also here
+        } for rent in rentals]
+
+        result.append({
+            "agent_id": agent_id,
+            "agent_name": full_name,
+            "sales_report": sales_data,
+            "rental_report": rental_data
+        })
+
+    return jsonify(result)
