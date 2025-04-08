@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app import db
 from app.models import Properties, Agents, Buyer, Rent, Sale, Owner
-
+from werkzeug.security import check_password_hash, generate_password_hash
 bp = Blueprint('main', __name__)
 
 @bp.route('/')
@@ -143,6 +143,8 @@ def create_property():
 @bp.route('/agents', methods=['POST'])
 def create_agent():
     data = request.json
+    if Agents.query.filter_by(email=data['email']).first():
+        return jsonify({'error': 'Agent already exists'}), 400
     new_agent = Agents(
         email=data['email'],
         phone_number=data['phone_number'],
@@ -151,7 +153,7 @@ def create_agent():
         state=data['state'],
         city=data['city'],
         address_line=data['address_line'],
-        password_hash=data['password_hash']
+        password_hash=generate_password_hash(data['password'])
     )
     db.session.add(new_agent)
     db.session.commit()
@@ -235,11 +237,13 @@ def update_agent(agent_id):
     agent.state = data.get('state', agent.state)
     agent.city = data.get('city', agent.city)
     agent.address_line = data.get('address_line', agent.address_line)
-    agent.password_hash = data.get('password_hash', agent.password_hash)
+
+    # ✅ Proper password hashing
+    if 'password' in data:
+        agent.password_hash = generate_password_hash(data['password'])
 
     db.session.commit()
     return jsonify({'message': 'Agent updated successfully'})
-
 
 @bp.route('/properties/<int:property_id>', methods=['PUT'])
 def update_property(property_id):
@@ -335,6 +339,54 @@ def update_owner(owner_id):
     try:
         db.session.commit()
         return jsonify({'message': 'Owner updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+    
+    #login/signup
+    
+   
+
+@bp.route('/login/agent', methods=['POST'])
+def login_agent():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    agent = Agents.query.filter_by(email=email).first()
+
+    if agent and check_password_hash(agent.password_hash, password):
+        return jsonify({'message': 'Login successful', 'agent_id': agent.agent_id}), 200
+    else:
+        return jsonify({'error': 'Invalid email or password'}), 401
+
+
+
+@bp.route('/register/agent', methods=['POST'])
+def register_agent():
+    data = request.get_json()
+
+    if Agents.query.filter_by(email=data['email']).first():
+        return jsonify({'error': 'Agent already exists'}), 400
+
+    hashed_password = generate_password_hash(data['password'])
+
+    new_agent = Agents(
+        email=data['email'],
+        phone_number=data['phone_number'],
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        state=data['state'],
+        city=data['city'],
+        address_line=data['address_line'],
+        password_hash=hashed_password
+    )
+
+    try:
+        db.session.add(new_agent)
+        db.session.commit()
+        return jsonify({'message': 'Agent registered successfully'}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
