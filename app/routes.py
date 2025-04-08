@@ -121,6 +121,45 @@ def get_all_sales():
     return jsonify(result)
 
 
+#get sold properties by agent id
+@bp.route('/agents/<int:agent_id>/sales', methods=['GET'])
+def get_sales_by_agent(agent_id):
+    sales = Sale.query.filter_by(agent_id=agent_id).all()
+    result = []
+    for s in sales:
+        property_obj = Properties.query.get(s.property_id)
+        result.append({
+            'sale_id': s.id,
+            'property_id': s.property_id,
+            'property_name': property_obj.property_name if property_obj else None,
+            'city': property_obj.city if property_obj else None,
+            'address': property_obj.address_line if property_obj else None,
+            'sale_price': float(s.sale_price),
+            'sale_date': str(s.sale_date),
+            'buyer_id': s.buyer_id
+        })
+    return jsonify(result)
+
+#get rented properties by agent 
+@bp.route('/agents/<int:agent_id>/rents', methods=['GET'])
+def get_rents_by_agent(agent_id):
+    rents = Rent.query.filter_by(agent_id=agent_id).all()
+    result = []
+    for r in rents:
+        property_obj = Properties.query.get(r.property_id)
+        result.append({
+            'rent_id': r.id,
+            'property_id': r.property_id,
+            'property_name': property_obj.property_name if property_obj else None,
+            'city': property_obj.city if property_obj else None,
+            'address': property_obj.address_line if property_obj else None,
+            'rent_price': float(r.rent_price),
+            'rent_date': str(r.rent_date),
+            'duration_of_rent': r.duration_of_rent,
+            'buyer_id': r.buyer_id
+        })
+    return jsonify(result)
+
 #Post 
 
 @bp.route('/properties', methods=['POST'])
