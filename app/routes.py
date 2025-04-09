@@ -160,6 +160,35 @@ def get_rents_by_agent(agent_id):
         })
     return jsonify(result)
 
+#get all the properties listed by perticular agent 
+
+@bp.route('/agent/<int:agent_id>/properties', methods=['GET'])
+def get_properties_by_agent(agent_id):
+    properties = Properties.query.filter_by(agent_id=agent_id).all()
+    
+    if not properties:
+        return jsonify({"message": "No properties found for this agent"}), 404
+
+    properties_data = []
+    for prop in properties:
+        properties_data.append({
+            "property_id": prop.property_id,
+            "property_name": prop.property_name,
+            "state": prop.state,
+            "city": prop.city,
+            "address_line": prop.address_line,
+            "size_sqf": prop.size_sqf,
+            "no_of_bedrooms": prop.no_of_bedrooms,
+            "year_built": prop.year_built,
+            "rent_price": str(prop.rent_price),
+            "sale_price": str(prop.sale_price),
+            "status": prop.status,
+            "date_of_listing": prop.date_of_listing.strftime('%Y-%m-%d') if prop.date_of_listing else None
+        })
+
+    return jsonify(properties_data), 200
+
+
 #Post 
 
 @bp.route('/properties', methods=['POST'])
@@ -464,6 +493,7 @@ def register_office():
 @bp.route('/login_office', methods=['POST'])
 def login_office():
     data = request.json
+    print(data)
     staff = OfficeStaff.query.filter_by(email=data['email']).first()
     if staff and staff.check_password(data['password']):
         return jsonify({'message': 'Login successful', 'is_admin': staff.is_admin}), 200
